@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Calidad de Datos — Planificador{% endblock %}
+{% block page_title %}Gobernanza y Calidad de Datos Operacionales{% endblock %}
+{% block page_subtitle %}Monitoreo de integridad referencial, anomalías temporales, valores nulos y cobertura de trazabilidad{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #059669;">🛡</span>
+      <span>ÍNDICE DE CALIDAD GLOBAL</span>
+    </div>
+    <div class="kpi-value" style="color: #059669;">{{ report.score }}%</div>
+    <div class="kpi-subtext">Basado en reglas heurísticas de trazabilidad</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #2563eb;">📑</span>
+      <span>ÓRDENES EVALUADAS</span>
+    </div>
+    <div class="kpi-value" style="color: #2563eb;">{{ report.total_ordenes }}</div>
+    <div class="kpi-subtext">Órdenes auditadas en la base activa</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #475569;">⚡</span>
+      <span>MOVIMIENTOS AUDITADOS</span>
+    </div>
+    <div class="kpi-value" style="color: #475569;">{{ report.total_movimientos }}</div>
+    <div class="kpi-subtext">Eventos de taller en análisis</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #d97706;">🔍</span>
+      <span>REGLAS DE AUDITORÍA</span>
+    </div>
+    <div class="kpi-value" style="color: #d97706;">{{ report.anomalies|length }}</div>
+    <div class="kpi-subtext">Controles automáticos ejecutados</div>
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>🛡️</span> Detalle de Observaciones y Diagnóstico de Calidad
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Regla / Control de Integridad</th>
+          <th style="text-align: right;">Cantidad Detectada</th>
+          <th style="text-align: center;">Severidad</th>
+          <th>Impacto en Planificación</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in report.anomalies %}
+        <tr>
+          <td>
+            <div style="font-weight: 600; color: #0f172a;">{{ a.check }}</div>
+          </td>
+          <td style="text-align: right; font-weight: 700; color: {% if a.count > 0 %}#b45309{% else %}#059669{% endif %};">
+            {{ a.count }}
+          </td>
+          <td style="text-align: center;">
+            {% if a.severity == "ALTA" %}
+              <span style="background: #fee2e2; color: #dc2626; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;">ALTA</span>
+            {% elif a.severity == "MEDIA" %}
+              <span style="background: #fef3c7; color: #d97706; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;">MEDIA</span>
+            {% else %}
+              <span style="background: #eff6ff; color: #2563eb; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 4px;">INFORMATIVA</span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.78rem; color: #64748b;">
+            {% if a.count > 0 %}
+              Requiere ajuste o imputación de tiempos en motor de secuenciamiento.
+            {% else %}
+              Cumplimiento total. Datos íntegros para el cálculo de holguras.
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Plan &amp; Secuencia — Planificador{% endblock %}
+{% block page_title %}Planificación y Secuenciamiento Operacional{% endblock %}
+{% block page_subtitle %}Generación heurística de secuencias de despacho, cálculo de Makespan y fechas estimadas de entrega{% endblock %}
+
+{% block content %}
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>📋</span> Secuencia de Producción Activa: {% if selected_plan %}{{ selected_plan.codigo_plan }}{% else %}Sin plan activo{% endif %}
+    </div>
+    
+    <div style="display: flex; gap: 8px;">
+      <form method="POST" action="{% url 'planning:generate_plan' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.78rem;">
+          <span>▶</span> Generar Nueva Secuencia
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {% if selected_plan %}
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;">
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px;">
+      <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Total OTs Secuenciadas</div>
+      <div style="font-size: 1.25rem; font-weight: 800; color: #2563eb; margin-top: 2px;">{{ selected_plan.total_ordenes }}</div>
+    </div>
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px;">
+      <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Makespan Estimado</div>
+      <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ selected_plan.makespan_horas }} horas</div>
+    </div>
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px;">
+      <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Cuellos de Botella</div>
+      <div style="font-size: 1.25rem; font-weight: 800; color: {% if selected_plan.cuellos_botella_detectados > 0 %}#dc2626{% else %}#059669{% endif %}; margin-top: 2px;">
+        {{ selected_plan.cuellos_botella_detectados }}
+      </div>
+    </div>
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px;">
+      <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Generado</div>
+      <div style="font-size: 0.95rem; font-weight: 700; color: #475569; margin-top: 4px;">{{ selected_plan.fecha_generacion|date:"Y-m-d H:i" }}</div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width: 40px; text-align: center;">Posición</th>
+          <th>Orden de Trabajo</th>
+          <th>Cliente</th>
+          <th style="text-align: center;">Score</th>
+          <th style="text-align: right;">Duración Estimada</th>
+          <th>Inicio Estimado</th>
+          <th>Fin Estimado</th>
+          <th>Criterio Principal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in detalles %}
+        <tr>
+          <td style="text-align: center;">
+            <span class="number-circle" style="background: #2563eb;">{{ d.posicion_secuencia }}</span>
+          </td>
+          <td>
+            <div style="font-weight: 700; color: #0f172a;">OT-{{ d.idordentrabajo }}</div>
+            <div style="font-size: 0.75rem; color: #64748b;">{{ d.nombreordentrabajo }}</div>
+          </td>
+          <td><strong style="color: #334155; font-size: 0.82rem;">{{ d.cliente_nombre }}</strong></td>
+          <td style="text-align: center;">
+            <span class="badge-score">{{ d.score_prioridad }}</span>
+          </td>
+          <td style="text-align: right; font-weight: 700; color: #0f172a;">
+            {{ d.tiempo_estimado_horas }}h
+          </td>
+          <td style="font-size: 0.78rem; color: #64748b;">
+            {{ d.fecha_inicio_programada|date:"Y-m-d H:i"|default:"-" }}
+          </td>
+          <td style="font-size: 0.78rem; color: #64748b;">
+            {{ d.fecha_fin_programada|date:"Y-m-d H:i"|default:"-" }}
+          </td>
+          <td style="font-size: 0.78rem; color: #475569;">
+            {{ d.razon_principal }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 48px; color: #64748b;">
+    <p style="font-size: 1.1rem; margin-bottom: 14px;">No hay planes de secuenciamiento generados en la base de datos.</p>
+    <form method="POST" action="{% url 'planning:generate_plan' %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">
+        <span>▶</span> Generar Primera Secuencia de Taller
+      </button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

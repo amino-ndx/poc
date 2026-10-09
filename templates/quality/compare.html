@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Comparación SQLite vs PostgreSQL — Planificador{% endblock %}
+{% block page_title %}Comparación Dinámica: SQLite vs PostgreSQL{% endblock %}
+{% block page_subtitle %}Auditoría en tiempo real de conteo de registros entre el entorno sintético local y la base operacional real{% endblock %}
+
+{% block content %}
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>⚖️</span> Comparación de Volúmenes por Tabla Operacional
+    </div>
+    <span class="db-indicator-badge {{ DB_BADGE_CLASS }}">
+      Modo Actual: {{ DB_MODE_LABEL }}
+    </span>
+  </div>
+
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px 18px; border-radius: 8px; margin-bottom: 20px;">
+    <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">
+      Esta herramienta consulta de manera dinámica tanto el archivo local <code>db.sqlite3</code> como la base 
+      <code>Npdstrazabilidad</code> en PostgreSQL (puerto 5432). Permite al equipo de ingeniería verificar 
+      la cobertura del dataset sintético respecto a la escala real antes de conmutar de ambiente.
+    </p>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tabla Operacional</th>
+          <th style="text-align: right; background: #eff6ff;">SQLite (Sintético)</th>
+          <th style="text-align: right; background: #fffbeb;">PostgreSQL (Real)</th>
+          <th>Estado Comparativo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in comparison %}
+        <tr>
+          <td>
+            <code style="font-weight: 700; color: #0f172a;">{{ row.table }}</code>
+          </td>
+          <td style="text-align: right; font-weight: 700; color: #1d4ed8; background: #eff6ff;">
+            {{ row.sqlite_count }}
+          </td>
+          <td style="text-align: right; font-weight: 700; color: #b45309; background: #fffbeb;">
+            {{ row.postgres_count }}
+          </td>
+          <td>
+            {% if row.postgres_count == "No conectado" %}
+              <span style="font-size: 0.75rem; color: #64748b;">PostgreSQL no accesible</span>
+            {% elif row.sqlite_count > 0 %}
+              <span style="font-size: 0.75rem; color: #059669; font-weight: 600;">✓ Poblada en SQLite &bull; Operacional en PG</span>
+            {% else %}
+              <span style="font-size: 0.75rem; color: #d97706;">Pendiente de poblar en SQLite</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

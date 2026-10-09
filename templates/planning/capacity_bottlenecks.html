@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Capacidad &amp; Cuellos de Botella — Planificador{% endblock %}
+{% block page_title %}Capacidad de Máquinas y Detección de Cuellos de Botella{% endblock %}
+{% block page_subtitle %}Cálculo de utilización porcentual por puesto de trabajo y balanceo de carga semanal en taller{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #2563eb;">⚙️</span>
+      <span>MÁQUINAS EVALUADAS</span>
+    </div>
+    <div class="kpi-value" style="color: #2563eb;">{{ total_machines }}</div>
+    <div class="kpi-subtext">Puestos de trabajo analizados</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: {% if bottlenecks_count > 0 %}#dc2626{% else %}#059669{% endif %};">⚠️</span>
+      <span>CUELLOS DE BOTELLA</span>
+    </div>
+    <div class="kpi-value" style="color: {% if bottlenecks_count > 0 %}#dc2626{% else %}#059669{% endif %};">{{ bottlenecks_count }}</div>
+    <div class="kpi-subtext">Máquinas con utilización &gt; 100%</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #475569;">⏱️</span>
+      <span>CAPACIDAD ESTÁNDAR</span>
+    </div>
+    <div class="kpi-value" style="color: #475569;">80h</div>
+    <div class="kpi-subtext">Horas semanales por máquina (2 turnos)</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #059669;">🛡️</span>
+      <span>POLÍTICA DE BALANCEO</span>
+    </div>
+    <div class="kpi-value" style="color: #059669;">SPT / WSPT</div>
+    <div class="kpi-subtext">Despacho para minimizar Makespan</div>
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>⏱️</span> Carga y Nivel de Saturación por Puesto de Mecanizado
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Máquina</th>
+          <th>Código</th>
+          <th style="text-align: right;">Carga Asignada</th>
+          <th style="text-align: right;">Capacidad Semanal</th>
+          <th style="text-align: center;">Utilización (%)</th>
+          <th style="text-align: center;">Movimientos</th>
+          <th style="text-align: center;">Diagnóstico</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for w in workloads %}
+        <tr>
+          <td><strong style="color: #0f172a;">{{ w.nombremaquina }}</strong></td>
+          <td><code>{{ w.codigomaquina }}</code></td>
+          <td style="text-align: right; font-weight: 700; color: #0f172a;">{{ w.load_hours }}h</td>
+          <td style="text-align: right; color: #64748b;">{{ w.capacity_hours }}h</td>
+          <td style="text-align: center;">
+            <div style="font-weight: 800; color: {% if w.utilization > 100 %}#dc2626{% elif w.utilization > 75 %}#d97706{% else %}#059669{% endif %};">
+              {{ w.utilization }}%
+            </div>
+            <div style="background: #e2e8f0; height: 6px; border-radius: 3px; width: 100px; margin: 4px auto 0; overflow: hidden;">
+              <div style="background: {% if w.utilization > 100 %}#dc2626{% elif w.utilization > 75 %}#d97706{% else %}#059669{% endif %}; height: 100%; width: {% if w.utilization > 100 %}100%{% else %}{{ w.utilization }}%{% endif %};"></div>
+            </div>
+          </td>
+          <td style="text-align: center; color: #64748b;">{{ w.mov_count }}</td>
+          <td style="text-align: center;">
+            {% if w.is_bottleneck %}
+              <span style="background: #fee2e2; color: #dc2626; font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 4px;">
+                CUELLO DE BOTELLA
+              </span>
+            {% elif w.utilization > 75 %}
+              <span style="background: #fef3c7; color: #d97706; font-size: 0.72rem; font-weight: 700; padding: 4px 8px; border-radius: 4px;">
+                CARGA ALTA
+              </span>
+            {% else %}
+              <span style="background: #d1fae5; color: #059669; font-size: 0.72rem; font-weight: 600; padding: 4px 8px; border-radius: 4px;">
+                DISPONIBLE
+              </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">
+            No hay máquinas configuradas para el cálculo de capacidad.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Estado de Base de Datos — Planificador{% endblock %}
+{% block page_title %}Estado de Base de Datos y Conectividad{% endblock %}
+{% block page_subtitle %}Diagnóstico técnico del motor activo, parámetros de red y tablas operacionales disponibles{% endblock %}
+
+{% block content %}
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>🗄️</span> Fuente de Datos Activa
+    </div>
+    <span class="db-indicator-badge {{ DB_BADGE_CLASS }}">
+      <span class="dot-indicator {% if IS_POSTGRES_REAL %}dot-postgres{% else %}dot-sqlite{% endif %}"></span>
+      {{ db_info.mode_label }}
+    </span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+    
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px;">
+      <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Motor de Base de Datos</div>
+      <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-top: 4px;">{{ db_info.engine }}</div>
+      <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Esquema: {{ db_info.schema }}</div>
+    </div>
+
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px;">
+      <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Host / Puerto / BD</div>
+      <div style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin-top: 4px;">{{ db_info.database_name }}</div>
+      <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">{{ db_info.host }}:{{ db_info.port }} (Usuario: {{ db_info.user }})</div>
+    </div>
+
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px;">
+      <div style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Estado de Conexión</div>
+      <div style="font-size: 1.15rem; font-weight: 700; color: {% if db_info.status == 'CONECTADO' %}#059669{% else %}#dc2626{% endif %}; margin-top: 4px;">
+        ● {{ db_info.status }}
+      </div>
+      <div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">
+        {% if IS_POSTGRES_REAL %}Modo de Solo Lectura Enforzado{% else %}Desarrollo Local Seguro (POC){% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  {% if IS_POSTGRES_REAL %}
+  <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 14px 18px; border-radius: 8px; margin-bottom: 24px;">
+    <h3 style="font-size: 0.9rem; font-weight: 700; color: #92400e; margin-bottom: 4px;">
+      🔒 Protocolo de Seguridad en Base de Datos Real
+    </h3>
+    <p style="font-size: 0.8rem; color: #78350f; line-height: 1.4;">
+      La conexión actual apunta a la base operacional <strong>Npdstrazabilidad</strong>. Django está configurado con 
+      enrutador de base de datos de solo lectura (<code>ReadOnlyPostgresRouter</code>) que bloquea cualquier operación
+      <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>DROP</code> o <code>ALTER</code> sobre las tablas operacionales <code>mct_*</code>.
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="content-card-header" style="margin-top: 8px;">
+    <div class="card-title" style="font-size: 0.95rem;">
+      <span>📊</span> Conteo de Registros en Tablas Principales
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{% url 'quality:mct_explorer' %}" class="btn btn-outline" style="font-size: 0.75rem; padding: 6px 12px;">Explorador MCT</a>
+      <a href="{% url 'quality:database_compare' %}" class="btn btn-primary" style="font-size: 0.75rem; padding: 6px 12px;">Comparar con la otra BD</a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tabla Operacional</th>
+          <th style="text-align: right;">Cantidad de Registros</th>
+          <th>Estado en Base Activa</th>
+          <th style="text-align: center;">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for table, count in db_info.table_counts.items %}
+        <tr>
+          <td>
+            <code style="font-weight: 700; color: #2563eb;">{{ table }}</code>
+          </td>
+          <td style="text-align: right; font-weight: 700; color: #0f172a;">
+            {{ count }}
+          </td>
+          <td>
+            <span style="font-size: 0.78rem; font-weight: 600; color: #059669;">● Detectada y Accesible</span>
+          </td>
+          <td style="text-align: center;">
+            <a href="{% url 'quality:mct_explorer' %}?table={{ table }}" class="btn btn-outline" style="font-size: 0.72rem; padding: 4px 10px;">
+              Inspeccionar
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

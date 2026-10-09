@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Explorador de Relaciones — Planificador{% endblock %}
+{% block page_title %}Explorador de Relaciones y Modelo de Trazabilidad{% endblock %}
+{% block page_subtitle %}Validación estructural de la cadena relacional: OT → Partes → Hojas de Ruta → Movimientos → Recursos y SLAs{% endblock %}
+
+{% block content %}
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>🔗</span> Matriz de Validación de Enlaces Relacionales
+    </div>
+    <span class="db-indicator-badge {{ DB_BADGE_CLASS }}">
+      Base: {{ DB_MODE_LABEL }}
+    </span>
+  </div>
+
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 14px 18px; border-radius: 8px; margin-bottom: 24px;">
+    <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">
+      En el modelo de datos industrial (PostgreSQL y SQLite), conviven restricciones físicas de llave foránea (FK) 
+      con relaciones lógicas vinculadas por campos identificadores comunes (por ejemplo, <code>idordentrabajo</code> o <code>codhojaruta</code>). 
+      Esta tabla audita la consistencia de cada vínculo entre entidades operacionales.
+    </p>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Cadena Relacional</th>
+          <th>Tipo de Vínculo</th>
+          <th style="text-align: center;">Estado Validación</th>
+          <th>Detalles de Coincidencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in relationships %}
+        <tr>
+          <td>
+            <strong style="color: #0f172a; font-size: 0.85rem;">{{ r.name }}</strong>
+          </td>
+          <td>
+            <span class="tech-badge">{{ r.type }}</span>
+          </td>
+          <td style="text-align: center;">
+            {% if r.status == "OK" %}
+              <span style="background: #d1fae5; color: #065f46; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 6px;">
+                ● VALIDADA (OK)
+              </span>
+            {% elif r.status == "NO VALIDADA" %}
+              <span style="background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 6px;">
+                ▲ NO VALIDADA
+              </span>
+            {% else %}
+              <span style="background: #fee2e2; color: #991b1b; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 6px;">
+                ✕ ERROR
+              </span>
+            {% endif %}
+          </td>
+          <td style="font-size: 0.8rem; color: #64748b;">
+            {{ r.details }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Conceptual Hierarchy Diagram Visualizer -->
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>📐</span> Diagrama Conceptual de Flujo de Trazabilidad
+    </div>
+  </div>
+
+  <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; font-family: monospace; font-size: 0.85rem; line-height: 1.6; color: #1e293b;">
+    <pre>
+mct_ordentrabajo  ───────────────────────────────────► mct_progavisos (SLA / Plan)
+       │
+       ▼
+mct_ordentrabajoparte
+       ├──► mct_componente
+       └──► mct_parte
+               │
+               ▼
+       mct_hojaruta
+               │
+               ▼
+       mct_movimientoordentrabajo ───────────────► mct_movimientobloqueo
+               ├──► mct_maquina
+               ├──► mct_operador
+               ├──► mct_actividad
+               └──► mct_seccion
+    </pre>
+  </div>
+</div>
+{% endblock %}

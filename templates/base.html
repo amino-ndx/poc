@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Dashboard Ejecutivo — Planificador{% endblock %}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+
+  <!-- Left Sidebar Navigation -->
+  <aside class="app-sidebar">
+    <div class="sidebar-header">
+      <div class="brand-icon">⚙️</div>
+      <div>
+        <div class="brand-title">PLANIFICADOR</div>
+        <div class="brand-subtitle">BOMBAS HIDRÁULICAS POC</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Operaciones</div>
+      <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <span>📊</span> Dashboard / Inicio
+      </a>
+      <a href="{% url 'operational:work_orders' %}" class="nav-link {% if 'operational/ordenes' in request.path %}active{% endif %}">
+        <span>📑</span> Órdenes de Trabajo
+      </a>
+      <a href="{% url 'operational:movements' %}" class="nav-link {% if 'operational/movimientos' in request.path %}active{% endif %}">
+        <span>⚡</span> Movimientos Taller
+      </a>
+
+      <div class="nav-section-title">Análisis y Tiempos</div>
+      <a href="{% url 'analytics:statistical_analysis' %}" class="nav-link {% if 'analytics/estadisticas' in request.path %}active{% endif %}">
+        <span>⏱️</span> Análisis Estadístico
+      </a>
+      <a href="{% url 'analytics:deviations_sla' %}" class="nav-link {% if 'analytics/desviaciones' in request.path %}active{% endif %}">
+        <span>📈</span> Desviaciones &amp; SLAs
+      </a>
+
+      <div class="nav-section-title">Motor de Planificación</div>
+      <a href="{% url 'planning:prioritization' %}" class="nav-link {% if 'planning/priorizacion' in request.path %}active{% endif %}">
+        <span>⇅</span> Priorización Inteligente
+      </a>
+      <a href="{% url 'planning:scheduling' %}" class="nav-link {% if 'planning/secuencia' in request.path %}active{% endif %}">
+        <span>📋</span> Plan &amp; Secuencia
+      </a>
+      <a href="{% url 'planning:capacity' %}" class="nav-link {% if 'planning/capacidad' in request.path %}active{% endif %}">
+        <span>⏱</span> Capacidad &amp; Cuellos
+      </a>
+      <a href="{% url 'planning:simulation' %}" class="nav-link {% if 'planning/simulacion' in request.path %}active{% endif %}">
+        <span>⚡</span> Simulación Urgencias
+      </a>
+
+      <div class="nav-section-title">Gobernanza &amp; Calidad</div>
+      <a href="{% url 'quality:data_quality' %}" class="nav-link {% if request.path == '/quality/' %}active{% endif %}">
+        <span>🛡️</span> Calidad de Datos
+      </a>
+      <a href="{% url 'quality:database_status' %}" class="nav-link {% if 'quality/database' in request.path and 'mct' not in request.path and 'compare' not in request.path %}active{% endif %}">
+        <span>🗄️</span> Estado Base de Datos
+      </a>
+      <a href="{% url 'quality:mct_explorer' %}" class="nav-link {% if 'quality/database/mct' in request.path %}active{% endif %}">
+        <span>🔍</span> Explorador Tablas MCT
+      </a>
+      <a href="{% url 'quality:database_compare' %}" class="nav-link {% if 'quality/database/compare' in request.path %}active{% endif %}">
+        <span>⚖️</span> Comparar SQLite vs PG
+      </a>
+      <a href="{% url 'quality:relations_explorer' %}" class="nav-link {% if 'quality/relations' in request.path %}active{% endif %}">
+        <span>🔗</span> Relaciones del Modelo
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div style="font-weight: 600; color: #94a3b8; margin-bottom: 2px;">Motor Heurístico Activo</div>
+      <div>{% if IS_POSTGRES_REAL %}PostgreSQL Real (Solo Lectura){% else %}SQLite POC - PostgreSQL Ready{% endif %}</div>
+    </div>
+  </aside>
+
+  <!-- Main View Area -->
+  <main class="app-main">
+    
+    <!-- Topbar -->
+    <header class="app-topbar">
+      <div class="topbar-left">
+        <h1>{% block page_title %}Panel de Control Operativo{% endblock %}</h1>
+        <p>{% block page_subtitle %}Estado integral de reparación, fabricación y carga en taller de bombas hidráulicas{% endblock %}</p>
+      </div>
+
+      <div class="topbar-right">
+        <!-- Prominent DB Mode Indicator Badge -->
+        <a href="{% url 'quality:database_status' %}" class="db-indicator-badge {{ DB_BADGE_CLASS }}" title="Haga clic para ver el diagnóstico detallado de conexión">
+          <span class="dot-indicator {% if IS_POSTGRES_REAL %}dot-postgres{% else %}dot-sqlite{% endif %}"></span>
+          {{ DB_MODE_LABEL }}
+        </a>
+
+        <!-- Shift Pill -->
+        <div class="date-pill">
+          📅 {{ CURRENT_SHIFT_LABEL }}
+        </div>
+
+        <!-- User Badge -->
+        <div class="user-profile">
+          <div class="avatar-badge">{{ CURRENT_USER_INITIALS }}</div>
+          <div class="user-meta">
+            <div class="user-name">{{ CURRENT_USER_NAME }}</div>
+            <div class="user-role">{{ CURRENT_USER_ROLE }}</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- PostgreSQL Real Read-Only Alert Banner -->
+    {% if IS_POSTGRES_REAL %}
+    <div class="readonly-banner">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.2rem;">⚠️</span>
+        <span><strong>ATENCIÓN:</strong> Conectado a PostgreSQL con <strong>DATOS REALES</strong> (Base: Npdstrazabilidad). Modo de <strong>SOLO LECTURA</strong> activo. Operaciones de escritura prohibidas sobre tablas operacionales <code>mct_*</code>.</span>
+      </div>
+      <a href="{% url 'quality:database_status' %}" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">Ver Estado BD</a>
+    </div>
+    {% endif %}
+
+    <!-- Django Messages Notification -->
+    {% if messages %}
+    <div style="padding: 16px 32px 0;">
+      {% for message in messages %}
+      <div class="content-card" style="padding: 12px 18px; margin-bottom: 12px; background: {% if message.tags == 'success' %}#f0fdf4; border-color: #bbf7d0; color: #166534;{% else %}#eff6ff; border-color: #bfdbfe; color: #1e40af;{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Page Body -->
+    <div class="page-container">
+      {% block content %}{% endblock %}
+    </div>
+
+  </main>
+
+  <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle OT-{{ order.idordentrabajo }} — Planificador{% endblock %}
+{% block page_title %}Trazabilidad Integral: OT-{{ order.idordentrabajo }}{% endblock %}
+{% block page_subtitle %}{{ order.nombreordentrabajo }}{% endblock %}
+
+{% block content %}
+<!-- Order Master Summary Card -->
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>📑</span> Resumen de Cabecera de la Orden
+    </div>
+    <a href="{% url 'operational:work_orders' %}" class="btn btn-outline" style="font-size: 0.78rem; padding: 4px 10px;">
+      &laquo; Volver al listado
+    </a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px;">
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px;">
+      <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Cliente</div>
+      <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ client_name }}</div>
+    </div>
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px;">
+      <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Fecha Recepción</div>
+      <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ order.fecharecepcion|date:"Y-m-d H:i"|default:"-" }}</div>
+    </div>
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px;">
+      <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Fecha Entrega Comprometida</div>
+      <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-top: 2px;">{{ order.fechaentrega|date:"Y-m-d H:i"|default:"-" }}</div>
+    </div>
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px;">
+      <div style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Prioridad Operacional</div>
+      <div style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-top: 2px;">Nivel {{ order.prioridad|default:"Normal" }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Relational Tree: Partes -> Hojas de Ruta -> Movimientos -->
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>🔩</span> Componentes, Partes y Hojas de Ruta Asociadas
+    </div>
+  </div>
+
+  {% for p_item in parts_tree %}
+  <div style="border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 20px; overflow: hidden;">
+    <div style="background: #f1f5f9; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong style="color: #0f172a; font-size: 0.95rem;">
+          Item {{ p_item.ot_parte.itemparte }}: {{ p_item.componente.nombrecomponente|default:"Componente General" }}
+        </strong>
+        <span style="font-size: 0.8rem; color: #64748b; margin-left: 8px;">
+          (Parte: {{ p_item.parte.nombreparte|default:"Estándar" }})
+        </span>
+      </div>
+      <div>
+        <span class="tech-badge">ID Parte: {{ p_item.ot_parte.idparte }}</span>
+      </div>
+    </div>
+
+    <!-- Hojas de ruta for this component -->
+    <div style="padding: 16px;">
+      {% for hr_item in p_item.hojas_ruta %}
+      <div style="margin-bottom: 16px;">
+        <div style="font-size: 0.85rem; font-weight: 700; color: #2563eb; margin-bottom: 8px;">
+          📄 Hoja de Ruta: {{ hr_item.hoja_ruta.codhojaruta|default:"Sin Código" }} (ID: {{ hr_item.hoja_ruta.idhojaruta }})
+        </div>
+
+        <!-- Table of Movements -->
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Mov ID</th>
+                <th>Actividad</th>
+                <th>Máquina Asignada</th>
+                <th>Operador Asignado</th>
+                <th>Inicio</th>
+                <th>Término</th>
+                <th style="text-align: right;">Duración (h)</th>
+                <th>Bloqueos / Reprocesos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in hr_item.movimientos %}
+              <tr>
+                <td><code>#{{ m.movimiento.idmovimientoordentrabajo }}</code></td>
+                <td><strong style="color: #0f172a;">{{ m.actividad_nombre }}</strong></td>
+                <td>{{ m.maquina_nombre }}</td>
+                <td>{{ m.operador_nombre }}</td>
+                <td style="font-size: 0.78rem; color: #64748b;">{{ m.movimiento.fechainicio|date:"Y-m-d H:i"|default:"-" }}</td>
+                <td style="font-size: 0.78rem; color: #64748b;">
+                  {% if m.movimiento.fechatermino %}
+                    {{ m.movimiento.fechatermino|date:"Y-m-d H:i" }}
+                  {% else %}
+                    <span style="background: #fef3c7; color: #d97706; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">ABIERTO</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: right; font-weight: 700; color: #0f172a;">{{ m.duracion_horas }}h</td>
+                <td>
+                  {% if m.bloqueos %}
+                    <span style="background: #fee2e2; color: #dc2626; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">BLOQUEADO</span>
+                  {% elif m.movimiento.reprocesosol %}
+                    <span style="background: #fef3c7; color: #d97706; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px;">REPROCESO</span>
+                  {% else %}
+                    <span style="color: #059669; font-size: 0.75rem;">Normal</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" style="text-align: center; color: #64748b; padding: 12px;">
+                  No hay movimientos registrados para esta hoja de ruta.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% empty %}
+      <p style="font-size: 0.8rem; color: #64748b;">No hay hojas de ruta asociadas a este componente.</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <p style="color: #64748b; font-size: 0.85rem;">No se encontraron partes ni componentes para esta orden.</p>
+  {% endfor %}
+</div>
+
+<!-- ProgAvisos (Planned SLAs vs Execution) -->
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>⏱️</span> Programación de Avisos e Hitos SLA
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tramo / Hito SLA</th>
+          <th>Inicio Planificado</th>
+          <th>Fin Planificado</th>
+          <th>Fin Real Ejecutado</th>
+          <th style="text-align: center;">Días Tramo</th>
+          <th style="text-align: center;">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in progavisos %}
+        <tr>
+          <td><strong style="color: #0f172a;">{{ p.sla_nombre }}</strong></td>
+          <td style="font-size: 0.8rem; color: #64748b;">{{ p.pa.fecha_inicio|date:"Y-m-d" }}</td>
+          <td style="font-size: 0.8rem; color: #64748b;">{{ p.pa.fecha_termino|date:"Y-m-d" }}</td>
+          <td style="font-size: 0.8rem; color: #64748b;">{{ p.pa.fecha_real_termino|date:"Y-m-d"|default:"Pendiente" }}</td>
+          <td style="text-align: center;">{{ p.pa.dias_tramo }} días</td>
+          <td style="text-align: center;">
+            {% if p.pa.fecha_real_termino %}
+              <span style="color: #059669; font-weight: 600;">✓ Ejecutado</span>
+            {% else %}
+              <span style="color: #2563eb; font-weight: 600;">⏳ En Curso</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align: center; color: #64748b; padding: 16px;">
+            No hay hitos de programación registrados para esta orden.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Explorador de Tablas MCT — Planificador{% endblock %}
+{% block page_title %}Explorador de Tablas Operacionales (MCT){% endblock %}
+{% block page_subtitle %}Catálogo automático de tablas mct_*, metadatos de columnas, conteo de nulos y muestra paginada de datos{% endblock %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; align-items: start;">
+
+  <!-- Left: Tables Catalog -->
+  <div class="content-card" style="padding: 16px;">
+    <div style="font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+      <span>Tablas MCT ({{ all_tables|length }})</span>
+    </div>
+    
+    <div style="max-height: 650px; overflow-y: auto; padding-right: 4px;">
+      {% for t in all_tables %}
+      <a href="?table={{ t.name }}" style="display: block; padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; text-decoration: none; margin-bottom: 4px; {% if t.name == selected_table %}background: #2563eb; color: white; font-weight: 700;{% else %}background: #f8fafc; color: #334155; border: 1px solid #e2e8f0;{% endif %}">
+        <div>{{ t.name }}</div>
+        <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 2px;">
+          {{ t.row_count }} filas &bull; {{ t.col_count }} cols
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Right: Table Details & Sample Data -->
+  <div>
+    
+    <!-- Table Header Info -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div>
+          <div style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">
+            <code>{{ selected_table }}</code>
+          </div>
+          <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+            Total Registros: <strong>{{ table_data.total_rows }}</strong> &bull; Total Columnas: <strong>{{ table_data.columns|length }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column Metadata Table -->
+      <h3 style="font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 10px;">
+        Estructura y Calidad de Columnas
+      </h3>
+      <div class="table-responsive" style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 24px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Columna</th>
+              <th>Tipo de Dato</th>
+              <th>Permite NULL</th>
+              <th style="text-align: right;">Valores NULL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for col in table_data.columns %}
+            <tr>
+              <td><strong style="color: #0f172a;">{{ col.name }}</strong></td>
+              <td><code style="color: #64748b;">{{ col.type }}</code></td>
+              <td>{% if col.nullable %}<span style="color: #059669;">Sí</span>{% else %}<span style="color: #dc2626; font-weight: 600;">No (NOT NULL)</span>{% endif %}</td>
+              <td style="text-align: right; font-weight: 600; color: {% if col.null_count > 0 %}#d97706{% else %}#64748b{% endif %};">{{ col.null_count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Sample Rows Table -->
+      <div class="content-card-header">
+        <h3 style="font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase;">
+          Muestra de Datos (Página {{ table_data.page }} de {{ table_data.total_pages }})
+        </h3>
+        <div style="display: flex; gap: 8px;">
+          {% if table_data.page > 1 %}
+          <a href="?table={{ selected_table }}&page={{ table_data.page|add:'-1' }}" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">&laquo; Anterior</a>
+          {% endif %}
+          {% if table_data.page < table_data.total_pages %}
+          <a href="?table={{ selected_table }}&page={{ table_data.page|add:'1' }}" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">Siguiente &raquo;</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 8px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              {% for cn in table_data.col_names %}
+              <th style="white-space: nowrap;">{{ cn }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in table_data.rows %}
+            <tr>
+              {% for val in row %}
+              <td style="white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis;">
+                {{ val|default:"-" }}
+              </td>
+              {% endfor %}
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="{{ table_data.col_names|length }}" style="text-align: center; padding: 20px; color: #64748b;">
+                No hay datos en esta tabla.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

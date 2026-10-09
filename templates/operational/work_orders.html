@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Órdenes de Trabajo — Planificador{% endblock %}
+{% block page_title %}Órdenes de Trabajo (OTs){% endblock %}
+{% block page_subtitle %}Listado y trazabilidad integral de órdenes operacionales de bombas en taller{% endblock %}
+
+{% block content %}
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>📑</span> Órdenes de Trabajo (Total: {{ total_orders }})
+    </div>
+    
+    <!-- Search Form -->
+    <form method="GET" style="display: flex; gap: 8px;">
+      <input type="text" name="q" value="{{ search }}" placeholder="Buscar por bomba o descripción..." style="padding: 6px 12px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 6px; width: 250px;">
+      <button type="submit" class="btn btn-outline" style="padding: 6px 12px; font-size: 0.8rem;">Buscar</button>
+    </form>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID OT</th>
+          <th>Nombre / Descripción de Bomba</th>
+          <th>Cliente</th>
+          <th>Fecha Recepción</th>
+          <th>Fecha Entrega</th>
+          <th style="text-align: center;">Prioridad</th>
+          <th style="text-align: center;">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ot in page_obj %}
+        <tr>
+          <td><strong style="color: #2563eb;">OT-{{ ot.idordentrabajo }}</strong></td>
+          <td>
+            <div style="font-weight: 600; color: #0f172a;">{{ ot.nombreordentrabajo }}</div>
+            <div style="font-size: 0.72rem; color: #64748b;">Ref Cliente: {{ ot.otcliente|default:"-" }}</div>
+          </td>
+          <td>
+            <div style="font-weight: 500; color: #334155;">{{ ot.idcliente }}</div>
+          </td>
+          <td style="font-size: 0.8rem; color: #64748b;">
+            {{ ot.fecharecepcion|date:"Y-m-d H:i"|default:"-" }}
+          </td>
+          <td style="font-size: 0.8rem; color: #64748b;">
+            {{ ot.fechaentrega|date:"Y-m-d H:i"|default:"-" }}
+          </td>
+          <td style="text-align: center;">
+            {% if ot.prioridad == 1 %}
+              <span style="background: #fee2e2; color: #dc2626; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">ALTA / URGENTE</span>
+            {% elif ot.prioridad == 2 %}
+              <span style="background: #fef3c7; color: #d97706; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">MEDIA</span>
+            {% else %}
+              <span style="background: #f1f5f9; color: #475569; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 4px;">NORMAL</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            <a href="{% url 'operational:order_detail' ot.idordentrabajo %}" class="btn-icon-sm" title="Ver detalle de trazabilidad">
+              👁️
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">
+            No se encontraron órdenes de trabajo con los filtros aplicados.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; font-size: 0.8rem; color: #64748b;">
+    <div>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+    <div style="display: flex; gap: 6px;">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">&laquo; Anterior</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ search }}" class="btn btn-outline" style="padding: 4px 10px; font-size: 0.75rem;">Siguiente &raquo;</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

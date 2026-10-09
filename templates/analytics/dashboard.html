@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Ejecutivo — Planificador{% endblock %}
+{% block page_title %}Panel de Control Operativo{% endblock %}
+{% block page_subtitle %}Estado integral de reparación, fabricación y carga en taller de bombas hidráulicas{% endblock %}
+
+{% block content %}
+<!-- Top 4 KPI Cards Grid (Direct match to reference image) -->
+<div class="kpi-grid">
+  
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #2563eb;">🗂</span>
+      <span>ÓRDENES DE TRABAJO</span>
+    </div>
+    <div class="kpi-value" style="color: #2563eb;">{{ kpis.ordenes_activas }}</div>
+    <div class="kpi-subtext">{{ kpis.ordenes_activas }} activas en taller</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #d97706;">🕒</span>
+      <span>MOVIMIENTOS ABIERTOS</span>
+    </div>
+    <div class="kpi-value" style="color: #d97706;">{{ kpis.movimientos_abiertos }}</div>
+    <div class="kpi-subtext">De {{ kpis.total_movimientos }} movimientos totales</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #059669;">⚠️</span>
+      <span>CUELLOS DE BOTELLA</span>
+    </div>
+    <div class="kpi-value" style="color: #059669;">{{ kpis.cuellos_botella }}</div>
+    <div class="kpi-subtext">Máquinas con carga &gt; 100%</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #059669;">🛡</span>
+      <span>CALIDAD DE DATOS</span>
+    </div>
+    <div class="kpi-value" style="color: #059669;">{{ kpis.calidad_datos }}%</div>
+    <div class="kpi-subtext">{{ kpis.observaciones_calidad }} observaciones detectadas</div>
+  </div>
+
+</div>
+
+<!-- 2-Column Dashboard Grid -->
+<div class="dashboard-grid">
+
+  <!-- Left Column: Top Prioritized Orders (70%) -->
+  <div class="content-card">
+    <div class="content-card-header">
+      <div class="card-title">
+        <span style="color: #f59e0b;">⭐</span> Top Órdenes de Trabajo Priorizadas
+      </div>
+      <a href="{% url 'planning:prioritization' %}" class="btn btn-outline-primary" style="padding: 6px 14px; font-size: 0.78rem;">
+        Ver ranking completo
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 32px;">#</th>
+            <th>OT / BOMBA</th>
+            <th>CLIENTE</th>
+            <th style="text-align: center;">SCORE</th>
+            <th style="text-align: center;">HOLGURA</th>
+            <th>RAZÓN PRINCIPAL</th>
+            <th style="text-align: center;">ACCIÓN</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in ranking %}
+          <tr>
+            <td>
+              <span class="number-circle">{{ forloop.counter }}</span>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: #0f172a;">OT-{{ item.idordentrabajo }}</div>
+              <div style="font-size: 0.75rem; color: #64748b; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ item.nombreordentrabajo }}">
+                {{ item.nombreordentrabajo }}
+              </div>
+            </td>
+            <td>
+              <div style="font-size: 0.82rem; font-weight: 500; color: #334155;">{{ item.cliente }}</div>
+            </td>
+            <td style="text-align: center;">
+              <span class="badge-score">{{ item.score }}</span>
+            </td>
+            <td style="text-align: center;">
+              {% if item.holgura < 0 %}
+                <span class="badge-holgura badge-holgura-neg">{{ item.holgura }}h</span>
+              {% elif item.holgura < 48 %}
+                <span class="badge-holgura badge-holgura-warn">{{ item.holgura }}h</span>
+              {% else %}
+                <span class="badge-holgura badge-holgura-ok">{{ item.holgura }}h</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="font-size: 0.78rem; color: #475569; max-width: 260px;">
+                {{ item.razon_principal }}
+              </div>
+            </td>
+            <td style="text-align: center;">
+              <a href="{% url 'operational:order_detail' item.idordentrabajo %}" class="btn-icon-sm" title="Ver detalle de trazabilidad y movimientos">
+                👁️
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">
+              No hay órdenes de trabajo disponibles para evaluar.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Right Column: Production Plans & Tech Stack (30%) -->
+  <div>
+    
+    <!-- Planes de Producción Widget -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-title">
+          <span style="color: #2563eb;">☑️</span> Planes de Producción
+        </div>
+      </div>
+
+      {% if latest_plan %}
+      <div style="margin-bottom: 18px; padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Último Plan Generado</div>
+        <div style="font-weight: 700; color: #0f172a; margin: 4px 0 2px;">{{ latest_plan.codigo_plan }}</div>
+        <div style="font-size: 0.8rem; color: #475569;">
+          {{ latest_plan.total_ordenes }} OTs secuenciadas &bull; Makespan: <strong>{{ latest_plan.makespan_horas }}h</strong>
+        </div>
+      </div>
+      {% else %}
+      <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 18px;">
+        No hay planes generados aún en la sesión.
+      </p>
+      {% endif %}
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <form method="POST" action="{% url 'planning:generate_plan' %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary btn-block">
+            <span>▶</span> Generar Nueva Secuencia
+          </button>
+        </form>
+
+        <a href="{% url 'planning:simulation' %}" class="btn btn-outline btn-block">
+          <span>⚡</span> Simular Inserción Urgente
+        </a>
+      </div>
+    </div>
+
+    <!-- Tecnología POC Industrial Widget -->
+    <div class="content-card">
+      <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; margin-bottom: 8px;">
+        TECNOLOGÍA POC INDUSTRIAL
+      </div>
+      <p style="font-size: 0.78rem; color: #64748b; line-height: 1.45; margin-bottom: 14px;">
+        Motor basado en reglas heurísticas, WSPT, holguras operacionales y balanceo de carga en taller de bombas.
+      </p>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+        <span class="tech-badge">Django 5.1</span>
+        <span class="tech-badge">{% if IS_POSTGRES_REAL %}PostgreSQL Real{% else %}SQLite POC{% endif %}</span>
+        <span class="tech-badge">Pandas / NumPy</span>
+        <span class="tech-badge">PostgreSQL Ready</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

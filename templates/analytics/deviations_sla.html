@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Desviaciones &amp; SLAs — Planificador{% endblock %}
+{% block page_title %}Análisis de Desviaciones y Cumplimiento de SLAs{% endblock %}
+{% block page_subtitle %}Comparativa entre fechas programadas en mct_progavisos y fechas reales de término en taller{% endblock %}
+
+{% block content %}
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #2563eb;">📑</span>
+      <span>HITOS AUDITADOS</span>
+    </div>
+    <div class="kpi-value" style="color: #2563eb;">{{ report.total }}</div>
+    <div class="kpi-subtext">Avisos y tramos SLA evaluados</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #059669;">✓</span>
+      <span>DENTRO DE PLAZO</span>
+    </div>
+    <div class="kpi-value" style="color: #059669;">{{ report.a_tiempo }}</div>
+    <div class="kpi-subtext">Cumplimiento sin atraso operacional</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #dc2626;">⚠️</span>
+      <span>DESVIADOS / ATRASADOS</span>
+    </div>
+    <div class="kpi-value" style="color: #dc2626;">{{ report.atrasados }}</div>
+    <div class="kpi-subtext">Hitos con término posterior al pactado</div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-icon" style="color: #059669;">📈</span>
+      <span>CUMPLIMIENTO GLOBAL</span>
+    </div>
+    <div class="kpi-value" style="color: #059669;">{{ report.cumplimiento_pct }}%</div>
+    <div class="kpi-subtext">Tasa de entrega a tiempo (OTD)</div>
+  </div>
+</div>
+
+<div class="content-card">
+  <div class="content-card-header">
+    <div class="card-title">
+      <span>📈</span> Registro de Desviaciones por Hito de Programación (Muestra de 50 registros)
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID Aviso</th>
+          <th>OT Asociada</th>
+          <th>Inicio Planificado</th>
+          <th>Fin Planificado</th>
+          <th>Fin Real Ejecutado</th>
+          <th style="text-align: right;">Desviación (Días)</th>
+          <th style="text-align: center;">Estado SLA</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in report.items %}
+        <tr>
+          <td><code>#{{ item.idprogaviso }}</code></td>
+          <td>
+            <a href="{% url 'operational:order_detail' item.idordentrabajo %}" style="font-weight: 700; color: #2563eb; text-decoration: none;">
+              OT-{{ item.idordentrabajo }}
+            </a>
+          </td>
+          <td style="font-size: 0.8rem; color: #64748b;">{{ item.fecha_inicio|date:"Y-m-d" }}</td>
+          <td style="font-size: 0.8rem; color: #64748b;">{{ item.fecha_termino|date:"Y-m-d" }}</td>
+          <td style="font-size: 0.8rem; color: #64748b;">{{ item.fecha_real_termino|date:"Y-m-d"|default:"En curso" }}</td>
+          <td style="text-align: right; font-weight: 700; color: {% if item.dias_desviacion > 0 %}#dc2626{% else %}#059669{% endif %};">
+            {% if item.dias_desviacion > 0 %}+{{ item.dias_desviacion }} d{% else %}{{ item.dias_desviacion }} d{% endif %}
+          </td>
+          <td style="text-align: center;">
+            {% if item.cumple %}
+              <span style="background: #d1fae5; color: #065f46; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">A TIEMPO</span>
+            {% else %}
+              <span style="background: #fee2e2; color: #991b1b; font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">DESVIADO</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 24px; color: #64748b;">
+            No hay registros de programación de avisos para evaluar.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
